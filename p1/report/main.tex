@@ -1,0 +1,70 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage[margin=1in]{geometry}
+\usepackage{url}
+\usepackage[toc,page]{appendix}
+\usepackage{lscape}
+\usepackage{subcaption}
+\usepackage{longtable}
+\usepackage[hidelinks]{hyperref}
+\usepackage{biblatex} %Imports biblatex package
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{framed}
+\usepackage{pgfplots}
+\usepackage[T1]{fontenc}
+\usepackage{subcaption}
+
+\newcommand{\textbox}[2][6]{
+\begin{framed}
+\noindent#2
+\end{framed}}
+
+\addbibresource{bibliography.bib} %Import the bibliography file \title{Threat Analysis: a Patient Monitoring System}
+\author{Robin Martens}
+\date{19/08/2023}
+
+\newcommand{\tabitem}{\textbullet \ }
+\newcommand{\https}{\textsc{https}}
+\newcommand{\smtp}{\textsc{smtp}}
+\newcommand{\threat}[4]{#1 & \textit{#2} & #3 & #4 \\}
+
+\renewcommand{\sectionmark}[1]{\markright{\thesection.\ #1}}
+
+\fancyhead[L]{Robin Martens: r0885874}
+\fancyhead[C]{}
+\fancyhead[R]{}
+\fancyfoot[L]{Report Project I}
+\fancyfoot[C]{}
+\fancyfoot[R]{\thepage /\pageref{LastPage}}
+
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+\definecolor{s}{HTML}{25282a}
+\definecolor{t}{HTML}{003b56}
+\definecolor{r}{HTML}{0d514c}
+\definecolor{i}{HTML}{0f471f}
+\definecolor{d}{HTML}{473300}
+\definecolor{e}{HTML}{522000}
+
+\newcounter{assumptioncounter}
+\DeclareRobustCommand{\assumption}{%
+   \refstepcounter{assumptioncounter}%
+   \textit{AS\theassumptioncounter :}~}
+
+\begin{document}
+\input{titlepage}
+
+\tableofcontents
+\clearpage
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\pagestyle{fancy}
+
+Hello There
+
+\end{document}

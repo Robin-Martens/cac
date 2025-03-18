@@ -66,16 +66,68 @@ end for;
 // Exercise 3 //
 ////////////////
 
-R := PolynomialRing(F31);
+R<x> := PolynomialRing(F31);
 R.1;
 
 GenRandomIrreduciblePol := function(K, n)
-	f := Random(K);
-	while not IsInvertible(f) do
-	    f := Random(K);
-	end while;
-	return f;
+  R<x> := PolynomialRing(K);
+  repeat
+    pol := R ! ([Random(K) : i in [1..n]] cat [1]);
+  until IsIrreducible(pol);
+  return pol;
 end function;
 
-GenRandomIrreduciblePol(R, 5);
+print GenRandomIrreduciblePol(F31, 5);
 
+////////////////
+// Exercise 4 //
+////////////////
+
+print "=== Exercise 4 ===";
+
+f := RandomIrreduciblePolynomial(F31, 3);
+Fpn<w> := ext<F31 | f>;
+
+print Evaluate(f, w);
+
+
+elem := Fpn ! [Random(F31) : i in [1..3]];
+print elem;
+
+elem2 := Random(Fpn);
+print elem2;
+print Eltseq(elem2);
+
+print elem2^(-1);
+pol := PolynomialRing(F31) ! Eltseq(elem2);
+d, s, t := XGCD(pol, f);
+print s;
+
+print "\n";
+
+////////////////
+// Exercise 5 //
+////////////////
+
+print "=== Exercise 5 ===";
+
+f := RandomIrreduciblePolynomial(F31, 3);
+repeat g := RandomIrreduciblePolynomial(F31, 3); until f ne g;
+
+print f;
+print g;
+
+Fpn<w1> := ext<F31 | f>;
+
+print Roots(f, Fpn);
+print Roots(g, Fpn);
+
+Fpn2<w2> := ext<F31 | g>;
+
+r1 := Roots(f, Fpn2);
+for i in [1..#r1] do
+  print IsIrreducible(r1[i][1]);
+end for;
+print Roots(g, Fpn2);
+
+print "\n";

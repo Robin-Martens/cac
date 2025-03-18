@@ -1,11 +1,14 @@
 // test encrypt / decrypt
+load "basicBGV.m";
+SetPrintLevel("Maximal");
+SetQuitOnError(true);
 
 test_task1 := true;
-test_task2 := true;
-test_task3 := true;
-test_task4 := true;
-test_task5 := true;
-test_task6 := true;
+test_task2 := false;
+test_task3 := false;
+test_task4 := false;
+test_task5 := false;
+test_task6 := false;
 
 sk, pk := BGVKeyGen();
 m := RandomMessagePol();
@@ -14,11 +17,13 @@ mdec := BGVDecrypt(c,sk);
 print "Test encrypt / decrypt ", m eq mdec;
 print "Noise in fresh ct", BGVNoiseBound(c,sk);
 
+
 // test mod switch
 c1 := BGVModSwitch(c, 1);
 print "Noise in switched ct", BGVNoiseBound(c1,sk);
 m1 := BGVDecrypt(c1,sk);
 print "Test mod switch ", m eq m1;
+
 
 // test addition 
 m1 := RandomMessagePol();
@@ -33,6 +38,7 @@ print "Noise in addition", BGVNoiseBound(c3,sk);
 // test basic mult 
 c3 := BGVBasicMul(c1, c1);
 m3 := BGVDecrypt(c3, sk);
+print m3, ((m1*m1) mod f) mod p;
 print "Test basic multiplication ", m3 eq ((m1*m1) mod f) mod p;
 print "Noise in basic mult", BGVNoiseBound(c3,sk);
 

@@ -136,19 +136,19 @@ end function;
 // computes partial decryption of ciphertext ct under sk
 function BGVPartialDecrypt(ct, sk)
 
-level := ct[2];
- qell := GetBaseModulus()^level;
- coeffs := ct[1];
- part_dec := coeffs[1];
- si := sk;
- for i := 2 to #coeffs do
+  level := ct[2];
+  qell := GetBaseModulus()^level;
+  coeffs := ct[1];
+  part_dec := coeffs[1];
+  si := sk;
+  for i := 2 to #coeffs do
    part_dec := ((part_dec + coeffs[i]*si) mod f) mod qell;
    if (i lt #coeffs) then 
      si := (si*sk) mod f;
    end if;
- end for;
+  end for;
 
- return CenterRedPol(part_dec, qell);
+  return CenterRedPol(part_dec, qell);
 end function;
 
 // decryption is just partial decryption mod p
@@ -182,13 +182,101 @@ function BGVModSwitch(ct, t)
   
   for i := 1 to #coeffsd do
     delta := p*CenterRedPol(-coeffs[i]*invp mod qb^t, qb^t);
-	coeffsd[i] +:= delta;
-	coeffsd[i] := (coeffsd[i] div qb^t) mod qb^rell;
+    coeffsd[i] +:= delta;
+    coeffsd[i] := (coeffsd[i] div qb^t) mod qb^rell;
   end for;
   
   return <coeffsd, rell>;
 
 end function;
 
+function CTAdd(ct1, ct2)
+  return [ct1[i] + ct2[i] : i in [1..#ct1]];
+end function;
+function CTMult(ct1, ct2)
+  return [ct1[i] * ct2[i] : i in [1..#ct1]];
+end function;
 
+
+// 1.a
+function BGVAdd(c1, c2)
+  min_level := Minimum([c1[2], c2[2]]);
+  t1 := c1[2] - min_level;
+  t2 := c2[2] - min_level;
+
+  c1_reduced := c1;
+  c2_reduced := c2;
+  if t1 ne 0 then
+    c1_reduced := BGVModSwitch(c1, t1);
+  end if;
+  if t2 ne 0 then
+    c2_reduced := BGVModSwitch(c2, t2);
+  end if;
+
+  return <CTAdd(c1_reduced[1], c2_reduced[1]), min_level>;
+end function;
+
+// 1.b
+function BGVBasicMul(c1, c2)
+  min_level := Minimum([c1[2], c2[2]]);
+  t1 := c1[2] - min_level;
+  t2 := c2[2] - min_level;
+
+  c1_reduced := c1;
+  c2_reduced := c2;
+  if t1 ne 0 then
+    c1_reduced := BGVModSwitch(c1, t1);
+  end if;
+  if t2 ne 0 then
+    c2_reduced := BGVModSwitch(c2, t2);
+  end if;
+
+  RpY := PolynomialRing(Zx);
+
+  print Type(RpY!c1_reduced[1]);
+  a := (RpY!c1_reduced[1]) * (RpY!c2_reduced[1]);
+  print #a;
+  return <(RpY!c1_reduced[1]) * (RpY!c2_reduced[1]), min_level>;
+end function;
+
+// 1.c
+function BGVKeySwitch(g, ell, ksk)
+  L := GetMaxModulus();
+  T := L - 1;
+  qb := GetBaseModulus();
+
+  first := g mod qb;
+  pieces := [first];
+  g -:= first;
+  for i := T to 1 do
+    if g mod qb^i eq 0 then
+      value := (g / qb^i mod qb);
+      Append(~pieces, value);
+      g -:= value * qb^i;
+    else
+      Append(~pieces, 0);
+    end if;
+  end for;
+  
+  res := ksk[0];
+  for i := 1 to T do
+    for j := 1 to #res do
+      res[i][j] +:= pieces[i] * ksk[i][j];
+    end for;
+  end for;
+
+  return res;
+end function;
+
+// 1.d
+function BGVMul(c1, c2, ksk)
+  min_level := Minimum([c1[2], c2[2]]);
+  // Has three elements
+  basic_mul_res := BGVBasicMul(c1, c2);
+  key_switch := BGVKeySwitch(basic_mul_res[2], min_level, ksk);
+
+  return <[basic_mul_res[0] + key_switch[0], basic_mul_res[1], key_switch[1]] ,min_level>;
+end function;
+
+// 1.e
 
