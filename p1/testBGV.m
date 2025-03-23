@@ -1,14 +1,14 @@
 // test encrypt / decrypt
 load "basicBGV.m";
 SetPrintLevel("Maximal");
-SetQuitOnError(true);
+SetQuitOnError(false);
 
 test_task1 := true;
-test_task2 := false;
+test_task2 := true;
 test_task3 := false;
 test_task4 := false;
-test_task5 := false;
-test_task6 := false;
+test_task5 := true;
+test_task6 := true;
 
 sk, pk := BGVKeyGen();
 m := RandomMessagePol();
@@ -38,7 +38,6 @@ print "Noise in addition", BGVNoiseBound(c3,sk);
 // test basic mult 
 c3 := BGVBasicMul(c1, c1);
 m3 := BGVDecrypt(c3, sk);
-print m3, ((m1*m1) mod f) mod p;
 print "Test basic multiplication ", m3 eq ((m1*m1) mod f) mod p;
 print "Noise in basic mult", BGVNoiseBound(c3,sk);
 
@@ -61,6 +60,10 @@ for k := 2 to 16 do
   mk := BGVDecrypt(ck, sk);
   mt := ((mt*m1) mod f) mod p;
   print k;
+  if k eq 11 then
+    print InfNorm(BGVPartialDecrypt(ck, sk));
+    print mk, mt;
+  end if;
   print "Test basic multiplication ", mk eq mt;
   print "Noise in basic mult", BGVNoiseBound(ck,sk);
 end for;
@@ -128,23 +131,23 @@ print "Test multiplicative homomorphism ", aprodb eq [A[i]*B[i] : i in [1..N]];
 
 end if;
 
-if test_task4 then 
+// if test_task4 then 
 
-print "\n\n";
+// print "\n\n";
 
 // test Task 4
 
-if (toy_set) then 
-for k := 1 to 8 do 
-   skrec := BGVLatticeAttack(pk, k);
-   print "Lattice attack for qb^k with k =", k, skrec eq sk;
-end for;
-else
-   print "Only run lattice attack on toy set";
-end if;
-
-end if;
-
+// if (toy_set) then 
+//   for k := 1 to 8 do 
+//      skrec := BGVLatticeAttack(pk, k);
+//      print "Lattice attack for qb^k with k =", k, skrec eq sk;
+//   end for;
+//   else
+//      print "Only run lattice attack on toy set";
+// end if;
+//
+// end if;
+//
 if test_task5 then 
 
 // test Task 5
@@ -152,6 +155,7 @@ if test_task5 then
 print "\n\n";
 
 skrec := BGVTrivialKeyRecovery(sk);
+print skrec, sk;
 print "Trivial key recovery works ", skrec eq sk;
 skrec, ncalls := BGVActiveAttack(pk, sk);
 
@@ -159,7 +163,7 @@ print "Active attack works ", sk eq skrec, " using ", ncalls, " calls to decrypt
 
 end if;
 
-if test_task6 then 
+if false then 
 
 print "\n\n";
 

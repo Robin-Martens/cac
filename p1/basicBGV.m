@@ -18,8 +18,8 @@ facs := Factorisation(Fpz ! f);
 fs := [facs[i][1] : i in [1..#facs]];  // factors of f(x) for use in encoding / decoding
 alpha := -Coefficient(fs[1], 0);
 
-qb := 7*2^15*p + 1;  // base q for the ciphertext modulus, chosen = 1 mod p and coprime by construction
-
+// base q for the ciphertext modulus, chosen = 1 mod p and coprime by construction
+qb := 7*2^15*p + 1;
 max_level := 8;  // max number of levels
 if (not toy_set) then max_level := 12; end if;
 
@@ -84,9 +84,7 @@ end function;
 
 // centered reduction of g mod qi
 function CenterRedPol(g, qi)
-
   return Zx ! [CenterRed(ci, qi) : ci in Eltseq(g)];
-
 end function;
 
 // infinity norm of polynomial with coefficients over Z
@@ -135,7 +133,6 @@ end function;
 
 // computes partial decryption of ciphertext ct under sk
 function BGVPartialDecrypt(ct, sk)
-
   level := ct[2];
   qell := GetBaseModulus()^level;
   coeffs := ct[1];
@@ -148,6 +145,8 @@ function BGVPartialDecrypt(ct, sk)
    end if;
   end for;
 
+  print part_dec;
+
   return CenterRedPol(part_dec, qell);
 end function;
 
@@ -156,7 +155,8 @@ function BGVDecrypt(ct, sk)
  return BGVPartialDecrypt(ct, sk) mod p; 
 end function;
 
-// bound on size of partial decrypt, if this gets close to q/2 expect decryption failure
+// bound on size of partial decrypt, if this gets close to q/2 expect 
+// decryption failure
 function BGVNoiseBound(c, sk)
   norm := InfNorm(BGVPartialDecrypt(c, sk));
   if norm eq 0 then
@@ -190,93 +190,253 @@ function BGVModSwitch(ct, t)
 
 end function;
 
-function CTAdd(ct1, ct2)
-  return [ct1[i] + ct2[i] : i in [1..#ct1]];
-end function;
-function CTMult(ct1, ct2)
-  return [ct1[i] * ct2[i] : i in [1..#ct1]];
+function CTAdd(ct1, ct2, level)
+  qb := GetBaseModulus();
+  return [(ct1[i] + ct2[i] mod f) mod qb^level : i in [1..#ct1]];
 end function;
 
 
 // 1.a
 function BGVAdd(c1, c2)
-  min_level := Minimum([c1[2], c2[2]]);
-  t1 := c1[2] - min_level;
-  t2 := c2[2] - min_level;
-
-  c1_reduced := c1;
-  c2_reduced := c2;
-  if t1 ne 0 then
-    c1_reduced := BGVModSwitch(c1, t1);
+  l1 := c1[2];
+  l2 := c2[2];
+  min_level := Minimum(l1, l2);
+  t1 := l1 - min_level;
+  t2 := l2 - min_level;
+  if t1 ne 0 then 
+    c1 := BGVModSwitch(c1, t1);
   end if;
-  if t2 ne 0 then
-    c2_reduced := BGVModSwitch(c2, t2);
+  if t2 ne 0 then 
+    c2 := BGVModSwitch(c2, t2);
   end if;
 
-  return <CTAdd(c1_reduced[1], c2_reduced[1]), min_level>;
+  return <CTAdd(c1[1], c2[1], min_level), min_level>;
 end function;
 
 // 1.b
 function BGVBasicMul(c1, c2)
-  min_level := Minimum([c1[2], c2[2]]);
-  t1 := c1[2] - min_level;
-  t2 := c2[2] - min_level;
-
-  c1_reduced := c1;
-  c2_reduced := c2;
-  if t1 ne 0 then
-    c1_reduced := BGVModSwitch(c1, t1);
+  l1 := c1[2];
+  l2 := c2[2];
+  min_level := Minimum(l1, l2);
+  t1 := l1 - min_level;
+  t2 := l2 - min_level;
+  if t1 ne 0 then 
+    c1 := BGVModSwitch(c1, t1);
   end if;
-  if t2 ne 0 then
-    c2_reduced := BGVModSwitch(c2, t2);
+  if t2 ne 0 then 
+    c2 := BGVModSwitch(c2, t2);
   end if;
+  qb := GetBaseModulus();
 
   RpY := PolynomialRing(Zx);
+  qb := GetBaseModulus();
 
-  print Type(RpY!c1_reduced[1]);
-  a := (RpY!c1_reduced[1]) * (RpY!c2_reduced[1]);
-  print #a;
-  return <(RpY!c1_reduced[1]) * (RpY!c2_reduced[1]), min_level>;
+  mult_res := Eltseq((RpY!c1[1]) * (RpY!c2[1]));
+  return <[(item mod f) mod qb^min_level : item in mult_res], min_level>;
 end function;
 
 // 1.c
 function BGVKeySwitch(g, ell, ksk)
-  L := GetMaxModulus();
+  L := GetMaxLevel();
   T := L - 1;
   qb := GetBaseModulus();
 
+  Zqb := GF(qb);
+  Rqb<x> := PolynomialRing(Zqb);
+  tmp_g := g;
   first := g mod qb;
   pieces := [first];
   g -:= first;
-  for i := T to 1 do
+  for i in [1..T] do
     if g mod qb^i eq 0 then
-      value := (g / qb^i mod qb);
+      value := ((g div qb^i) mod qb);
       Append(~pieces, value);
       g -:= value * qb^i;
     else
-      Append(~pieces, 0);
+      Append(~pieces, Rqb ! 0);
     end if;
   end for;
+
+  control_g := &+[pieces[i]*qb^(i-1) : i in [1..#pieces]];
+  if control_g ne tmp_g then
+    error "Splitting up in pieces is not correct!";
+  end if;
   
-  res := ksk[0];
-  for i := 1 to T do
-    for j := 1 to #res do
-      res[i][j] +:= pieces[i] * ksk[i][j];
+  res := [pieces[1] * ksk[1][1], pieces[1] * ksk[1][2]];
+  print #ksk, T, #pieces;
+  for i in [2..T+1] do
+    for j in [1..#(ksk[1])] do
+      res[j] +:= pieces[i] * ksk[i][j];
     end for;
   end for;
-
-  return res;
+  return <res, L>;
 end function;
 
 // 1.d
 function BGVMul(c1, c2, ksk)
   min_level := Minimum([c1[2], c2[2]]);
+  qb := GetBaseModulus();
   // Has three elements
   basic_mul_res := BGVBasicMul(c1, c2);
-  key_switch := BGVKeySwitch(basic_mul_res[2], min_level, ksk);
-
-  return <[basic_mul_res[0] + key_switch[0], basic_mul_res[1], key_switch[1]] ,min_level>;
+  key_switch := BGVKeySwitch(basic_mul_res[1][3], min_level, ksk);
+  
+  ct := [(basic_mul_res[1][1] + key_switch[1][1] mod f) mod qb^min_level, (basic_mul_res[1][2] + key_switch[1][2] mod f) mod qb^min_level];
+  return <ct, min_level>;
 end function;
 
 // 1.e
+execute_1e := false;
+if execute_1e then
+  sk, pk := BGVKeyGen();
+  m := RandomMessagePol();
+  c1 := BGVEncrypt(m,pk);
+  ksk := BGVKeySwitchingKeyGen(sk^2 mod f, sk);
+
+  // tests for Task 1
+  ck_basic_mul := c1;
+  ck_mul := c1;
+  noise_basic_mul := [BGVNoiseBound(ck_basic_mul, sk)];
+  noise_mul := [BGVNoiseBound(ck_mul, sk)];
+  for k := 2 to 16 do
+    ck_basic_mul := BGVBasicMul(ck_basic_mul, c1);
+    ck_mul := BGVMul(ck_mul, c1, ksk);
+
+    Append(~noise_basic_mul, BGVNoiseBound(ck_basic_mul, sk));
+    Append(~noise_mul, BGVNoiseBound(ck_mul, sk));
+  end for;
+
+  ck_mul_mod := c1;
+  ck_mul_square := c1;
+  noise_mul_mod := [BGVNoiseBound(ck_mul_mod, sk)];
+  noise_mul_square := [BGVNoiseBound(ck_mul_square, sk)];
+  for k := 2 to 16 do
+    ck_mul_mod := BGVBasicMul(ck_mul_mod, c1);
+    ck_mul_mod := BGVModSwitch(ck_mul_mod, 1);
+
+    ck_mul_square := BGVMul(ck_mul_square, ck_mul_square, ksk);
+    ck_mul_square := BGVModSwitch(ck_mul_square, 1);
+
+    Append(~noise_basic_mul, BGVNoiseBound(ck_basic_mul, sk));
+    Append(~noise_mul, BGVNoiseBound(ck_mul_square, sk));
+  end for;
+
+  print noise_mul;
+  print noise_basic_mul;
+  print noise_mul_mod;
+  print noise_mul_square;
+end if;
+
+////////////
+// TASK 2 //
+////////////
+
+// 2.a
+function BGVEncode(ms, fs)
+  Zx := PolynomialRing(Integers());
+  return CRT([Zx ! m : m in ms], fs);
+end function;
+
+// 2.b
+function BGVDecode(m, fs)
+  return [m mod fi : fi in fs];
+end function;
+
+////////////
+// TASK 5 //
+////////////
+
+// 5.a
+function BGVTrivialKeyRecovery(sk)
+  special_ct := <[0, 1], 1>;
+  return CenterRedPol(BGVDecrypt(special_ct, sk), p);
+end function;
+
+// 5.c
+function BGVActiveAttack(pk, sk)
+  print BGVNoiseBound(<pk, GetMaxLevel()>, sk);
+  print BGVPartialDecrypt(BGVEncrypt(Zx ! p - 1, pk), sk);
+  return sk, 1;
+end function;
+
+////////////
+// TASK 6 //
+////////////
+
+// 6.a
+function RecNTT(a, omega, N)
+  if N eq 1 then
+    return [a[1]];
+  else
+    alpha := RecNTT([x : i -> x in a | i mod 2 eq 1], omega^2, N / 2);
+    beta := RecNTT([x : i -> x in a | i mod 2 eq 0], omega^2, N / 2);
+
+    gamma := [0 : _ in [1..N]];
+    for k in [1..N/2] do
+      delta_k := omega^k * beta[k];
+      gamma[k] := alpha[k] + delta_k;
+      gamma[k + N/2] := alpha[k] - delta_k;
+    end for;
+
+    return gamma;
+  end if;
+end function;
+
+function RecINTT(a, omega, N)
+  return 1 / N * RecNTT(a, omega^(-1), N);
+end function;
+
+
+// 6.b
+function SchoolBookMult(a, b)
+  a_seq := Eltseq(a);
+  b_seq := Eltseq(b);
+  n := #a_seq;
+  m := #b_seq;
+
+  c := [];
+  for i in [1..n+m] do
+    c_i := 0;
+    for j in [1..n] do
+      for k in [1..m] do
+        if j + k eq i then 
+          c_i +:= a_seq[j] * b_seq[k];
+        end if;
+      end for;
+    end for;
+    Append(~c, c_i);
+  end for;
+
+  return c;
+end function;
+
+function PrimitiveNthRoot(ell, N)
+  qell := GetBaseModulus()^ell;
+  if (qell - 1) mod N ne 0 then
+    error "There is no primitive root";
+  end if;
+  Zqell := Integers(qell);
+  Fx<x> := PolynomialRing(Zqell);
+  f := Fx ! (x^N - 1);
+  print f;
+  // print Roots(f);
+  return 1;
+end function;
+
+function IntToSeq(a)
+  digits := [];
+  while a gt 0 do
+    Append(~digits, a mod 10);
+    a := a div 10;
+  end while;
+
+  return digits;
+end function;
+
+function FastMult(a, b, omega, N)
+  // a_ntt := RecNTT(IntToSeq(a), omega, N);
+  // b_ntt := RecNTT(IntToSeq(b), omega, N);
+
+  // return RecINTT([a_ntt[i] * b_ntt[i]: i in [1..#IntToSeq(a)]], omega, N);
+  return a;
+end function;
 
