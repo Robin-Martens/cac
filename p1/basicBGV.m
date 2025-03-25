@@ -145,7 +145,7 @@ function BGVPartialDecrypt(ct, sk)
    end if;
   end for;
 
-  print part_dec;
+  // print part_dec;
 
   return CenterRedPol(part_dec, qell);
 end function;
@@ -263,7 +263,7 @@ function BGVKeySwitch(g, ell, ksk)
   end if;
   
   res := [pieces[1] * ksk[1][1], pieces[1] * ksk[1][2]];
-  print #ksk, T, #pieces;
+  // print #ksk, T, #pieces;
   for i in [2..T+1] do
     for j in [1..#(ksk[1])] do
       res[j] +:= pieces[i] * ksk[i][j];
@@ -320,10 +320,10 @@ if execute_1e then
     Append(~noise_mul, BGVNoiseBound(ck_mul_square, sk));
   end for;
 
-  print noise_mul;
-  print noise_basic_mul;
-  print noise_mul_mod;
-  print noise_mul_square;
+  // print noise_mul;
+  // print noise_basic_mul;
+  // print noise_mul_mod;
+  // print noise_mul_square;
 end if;
 
 ////////////
@@ -353,8 +353,8 @@ end function;
 
 // 5.c
 function BGVActiveAttack(pk, sk)
-  print BGVNoiseBound(<pk, GetMaxLevel()>, sk);
-  print BGVPartialDecrypt(BGVEncrypt(Zx ! p - 1, pk), sk);
+  // print BGVNoiseBound(<pk, GetMaxLevel()>, sk);
+  // print BGVPartialDecrypt(BGVEncrypt(Zx ! p - 1, pk), sk);
   return sk, 1;
 end function;
 
@@ -415,11 +415,13 @@ function PrimitiveNthRoot(ell, N)
     error "There is no primitive root";
   end if;
   Zqell := Integers(qell);
-  Fx<x> := PolynomialRing(Zqell);
-  f := Fx ! (x^N - 1);
-  print f;
-  // print Roots(f);
-  return 1;
+  repeat
+    x := Random(Zqell);
+    // The order of an element in the primary cyclic group is phi(q).
+    g := x^((EulerPhi(qell)) div N);
+  until g^(N div 2) ne 1; 
+  print g^N, Order(g);
+  return g;
 end function;
 
 function IntToSeq(a)

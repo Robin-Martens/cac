@@ -163,7 +163,7 @@ print "Active attack works ", sk eq skrec, " using ", ncalls, " calls to decrypt
 
 end if;
 
-if false then 
+if test_task6 then 
 
 print "\n\n";
 
