@@ -2,7 +2,7 @@ clear;
 
 // system parameters 
 
-toy_set := true;  // set this to false for standard parameter set
+toy_set := false;  // set this to false for standard parameter set
 
 Z := Integers();
 Zx<x> := PolynomialRing(Z);
@@ -72,14 +72,12 @@ end function;
 
 // centered reduction of a mod qi
 function CenterRed(a, qi)
-
   res := a mod qi;
   if (res gt qi/2) then
     res -:= qi;
   end if;
 
   return res;
-
 end function;
 
 // centered reduction of g mod qi
@@ -100,7 +98,7 @@ function BGVKeyGen()
  e := ErrorPol();
  s := TernaryPol();
 
- return s, [((a*s + p*e) mod f) mod q, -a mod q];
+ return s, [((a*s + p*e) mod f) mod q, -a mod q], e;
  
 end function;
 
@@ -145,8 +143,6 @@ function BGVPartialDecrypt(ct, sk)
    end if;
   end for;
 
-  // print part_dec;
-
   return CenterRedPol(part_dec, qell);
 end function;
 
@@ -176,7 +172,6 @@ function BGVModSwitch(ct, t)
   rell := ell - t;
   
   // need to divide everything by qb^t, first need to make everything divisible
-  
   _, invp, _ := XGCD(p,qb^t);  // inverse of p mod qb^t  
   coeffsd := coeffs;
   
@@ -263,7 +258,6 @@ function BGVKeySwitch(g, ell, ksk)
   end if;
   
   res := [pieces[1] * ksk[1][1], pieces[1] * ksk[1][2]];
-  // print #ksk, T, #pieces;
   for i in [2..T+1] do
     for j in [1..#(ksk[1])] do
       res[j] +:= pieces[i] * ksk[i][j];
@@ -309,21 +303,26 @@ if execute_1e then
   ck_mul_square := c1;
   noise_mul_mod := [BGVNoiseBound(ck_mul_mod, sk)];
   noise_mul_square := [BGVNoiseBound(ck_mul_square, sk)];
-  for k := 2 to 16 do
+  for k := 2 to 10 do
     ck_mul_mod := BGVBasicMul(ck_mul_mod, c1);
     ck_mul_mod := BGVModSwitch(ck_mul_mod, 1);
 
     ck_mul_square := BGVMul(ck_mul_square, ck_mul_square, ksk);
     ck_mul_square := BGVModSwitch(ck_mul_square, 1);
 
-    Append(~noise_basic_mul, BGVNoiseBound(ck_basic_mul, sk));
-    Append(~noise_mul, BGVNoiseBound(ck_mul_square, sk));
+    Append(~noise_mul_mod, BGVNoiseBound(ck_mul_mod, sk));
+    Append(~noise_mul_square, BGVNoiseBound(ck_mul_square, sk));
   end for;
 
-  // print noise_mul;
-  // print noise_basic_mul;
-  // print noise_mul_mod;
-  // print noise_mul_square;
+  PrintFile("values", "" : Overwrite := true);
+
+  for i in [1..#noise_basic_mul] do 
+    if i - 1 lt #noise_mul_mod then
+      PrintFile("values", [noise_basic_mul[i], noise_mul[i], noise_mul_mod[i], noise_mul_square[i]]);
+    else
+      PrintFile("values", [noise_basic_mul[i], noise_mul[i]]);
+    end if;
+  end for;
 end if;
 
 ////////////
@@ -342,6 +341,105 @@ function BGVDecode(m, fs)
 end function;
 
 ////////////
+// TASK 4 //
+////////////
+function Toeplitz(pol, Zq)
+    row := [Zq ! Eltseq(pol)[1]] cat [Zq ! -i : i in Reverse(Remove(Eltseq(pol), 1))];
+    col := Eltseq(pol);
+    
+    n := #row;
+    m := #col;
+    mat := ZeroMatrix(Integers(GetMaxModulus()), N, N);
+    
+    for i in [1..n] do
+      for j in [1..m] do
+        if i eq j then
+            mat[i][j] := row[1];
+        elif j gt i then
+            mat[i][j] := row[(j-i)+1];
+        else
+            mat[i][j] := col[(i-j)+1];
+        end if;
+      end for;
+    end for;
+    
+    return mat;
+end function;
+
+function CreateBlockMatrix(A, B, C, D, Zq)
+  nrows := Nrows(A) + Nrows(C);
+  ncols := Ncols(A) + Ncols(B);
+
+  block_matrix := ZeroMatrix(Integers(), nrows, ncols);
+
+  for i := 1 to Nrows(A) do
+    for j := 1 to Ncols(A) do
+      block_matrix[i, j] := A[i, j];
+    end for;
+  end for;
+
+  for i := 1 to Nrows(B) do
+    for j := 1 to Ncols(B) do
+      block_matrix[i, Ncols(A) + j] := B[i, j];
+    end for;
+  end for;
+
+  for i := 1 to Nrows(C) do
+    for j := 1 to Ncols(C) do
+      block_matrix[Nrows(A) + i, j] := C[i, j];
+    end for;
+  end for;
+
+  for i := 1 to Nrows(D) do
+    for j := 1 to Ncols(D) do
+      block_matrix[Nrows(A) + i, Ncols(A) + j] := D[i, j];
+    end for;
+  end for;
+
+  return block_matrix;
+end function;
+
+function CreateBasisMatrix(pk, q)
+  Zq := Integers(q);
+  Zxq<x> := PolynomialRing(Zq);
+
+  a := Zxq ! -pk[2];
+  b := pk[1];
+  B1 := Eltseq(b)[1];
+
+  A := ScalarMatrix(N, 1);
+
+  B := ZeroMatrix(Integers(), N, 3);
+  a1 := Eltseq(RowSubmatrix(Toeplitz(a, Zq), 1));
+  for i := 1 to Nrows(B) do
+      B[i, 1] := a1[i];
+  end for;
+
+  C := ZeroMatrix(Integers(), 3, N);
+  D := Matrix(Integers(), 3, 3, [p, 1, 0, -B1, 0, 1, q, 0, 0]);
+
+  return CreateBlockMatrix(A, B, C, D, Zq);
+end function;
+
+function BGVLatticeAttack(pk, ell)
+  qell := GetBaseModulus()^ell;
+  Zqell := Integers(qell);
+  Zxqell<x> := PolynomialRing(Zqell);
+
+  M := CreateBasisMatrix(pk, qell);
+  
+  L := Lattice(M);
+  LAT, basis := BKZ(L, 20);
+  s := (PolynomialRing(Integers()) ! Eltseq(LAT.1)[1..N]);
+  m := BGVDecrypt(<pk, GetMaxLevel()>, s);
+
+  if m ne 0 then
+    return -s;
+  end if;
+  return s;
+end function;
+
+////////////
 // TASK 5 //
 ////////////
 
@@ -352,10 +450,186 @@ function BGVTrivialKeyRecovery(sk)
 end function;
 
 // 5.c
+
+function ThresholdCT(ct, sk, idx)
+  m1 := BGVDecrypt(ct, sk);
+  m2 := BGVDecrypt(<[ct[1][1] + x^(idx), ct[1][2]], ct[2]>, sk);
+
+  return m1 eq m2;
+end function;
+
+function FullPol(coeff)
+  Z := Integers();
+  Zx<x> := PolynomialRing(Z);
+  return Zx ! [coeff : i in [0..N-1]];
+end function;
+
+function AppendToN(seq)
+  n := #seq;
+
+  if n ne N then
+    return seq cat [0 : _ in [1..N-n]];
+  end if;
+  return seq;
+end function;
+
+function ThresholdCTParallel(ct, sk)
+  pol := FullPol(1);
+
+  m1 := BGVDecrypt(ct, sk);
+  m2 := BGVDecrypt(<[ct[1][1] + pol, ct[1][2]], ct[2]>, sk);
+
+  threshold_coeffs := [];
+  m1_seq := AppendToN(Eltseq(m1));
+  m2_seq := AppendToN(Eltseq(m2));
+
+  for i in [1..#m1_seq] do
+    if (m1_seq[i] eq m2_seq[i]) then 
+      Append(~threshold_coeffs, i);
+    end if;
+  end for;
+
+  return threshold_coeffs;
+end function;
+
+function FindEIdx(pk, sk, idx)
+  q := GetMaxModulus();
+  delta := ((q - 1) div 2);
+  pk_ct := <pk, GetMaxLevel()>;
+
+  pk_ct[1][1] +:= delta * x^(idx);
+
+  if ThresholdCT(pk_ct, sk, idx) then
+    return 0, 2;
+  end if;
+
+  for i in [1..B] do
+    pk_ct[1][1] -:= p * x^(idx);
+    if ThresholdCT(pk_ct, sk, idx) then
+      return i, (1 + i) * 2;
+    end if;
+  end for;
+
+  pk_ct[1][1] +:= B * p * x^(idx);
+
+  for i in [1..B] do
+    pk_ct[1][1] +:= p * x^(idx);
+    if ThresholdCT(pk_ct, sk, idx) then
+      return -i, 2 * (1 + B + i);
+    end if;
+  end for;
+
+  error "No k found!";
+end function;
+
+function Done(e)
+  for item in e do 
+    if item eq B + 1 then
+      return false;
+    end if;
+  end for;
+
+  return true;
+end function;
+
+function AddCoeffsToE(coeff_idxs, value, e)
+  for idx in coeff_idxs do
+    e[idx] := value;
+  end for;
+  return e;
+end function;
+
+function CheckAndAdd(ct, sk, e, value)
+  coeff_idxs := ThresholdCTParallel(ct, sk);
+  e := AddCoeffsToE(coeff_idxs, value, e);
+  return e;
+end function;
+
+function FindEParallel(pk, sk)
+  q := GetMaxModulus();
+  delta := ((q - 1) div 2);
+  pk_ct := <pk, GetMaxLevel()>;
+  pol := FullPol(delta);
+
+  pk_ct[1][1] +:= pol;
+
+  e := [B + 1 : _ in [1..N]];
+  
+  e := CheckAndAdd(pk_ct, sk, e, 0);
+  if Done(e) then
+    return e, 2;
+  end if;
+
+  for i in [1..B] do
+    pk_ct[1][1] -:= FullPol(p);
+
+    e := CheckAndAdd(pk_ct, sk, e, i);
+    if Done(e) then
+      return e, (1 + i) * 2;
+    end if;
+  end for;
+
+  pk_ct[1][1] +:= B * FullPol(p);
+
+  // e is negative
+  for i in [1..B] do
+    pk_ct[1][1] +:= FullPol(p);
+
+    e := CheckAndAdd(pk_ct, sk, e, -i);
+    if Done(e) then
+      return e, 2 * (1 + B + i);
+    end if;
+  end for;
+
+  error "No k found in parallel!";
+end function;
+
+function FindE(pk, sk)
+  e := [];
+  total_queries := 0;
+  for idx in [0..N-1] do
+    ei, queries := FindEIdx(pk, sk, idx);
+    Append(~e, ei);
+    total_queries +:= queries;
+  end for;
+
+  return e, total_queries;
+end function;
+
+function CreateBMatrix(b, e)
+  b_seq := Eltseq(b);
+  return Matrix(Integers(GetMaxModulus()), 1, N, [b_seq[i] - p * e[i] : i in [1..#e]]);
+end function;
+
 function BGVActiveAttack(pk, sk)
-  // print BGVNoiseBound(<pk, GetMaxLevel()>, sk);
-  // print BGVPartialDecrypt(BGVEncrypt(Zx ! p - 1, pk), sk);
-  return sk, 1;
+  e, queries := FindE(pk, sk);
+  Zq := Integers(GetMaxModulus());
+  Zqx<x> := PolynomialRing(Zq);
+
+  a := Zqx ! -pk[2];
+  b := pk[1];
+
+  A := Transpose(Toeplitz(a, Zq));
+  B := CreateBMatrix(b, e);
+
+  found_s := Zqx ! Eltseq(Solution(A, B));
+  return found_s, queries;
+end function;
+
+function BGVActiveAttackParallel(pk, sk)
+  e, queries := FindEParallel(pk, sk);
+  Zq := Integers(GetMaxModulus());
+  Zqx<x> := PolynomialRing(Zq);
+
+  a := Zqx ! -pk[2];
+  b := pk[1];
+
+  // S := CreateS(sk);
+  A := Transpose(Toeplitz(a, Zq));
+  B := CreateBMatrix(b, e);
+
+  found_s := Zqx ! Eltseq(Solution(A, B));
+  return found_s, queries;
 end function;
 
 ////////////
@@ -367,22 +641,24 @@ function RecNTT(a, omega, N)
   if N eq 1 then
     return [a[1]];
   else
-    alpha := RecNTT([x : i -> x in a | i mod 2 eq 1], omega^2, N / 2);
-    beta := RecNTT([x : i -> x in a | i mod 2 eq 0], omega^2, N / 2);
+    alpha := RecNTT([x : i -> x in Eltseq(a) | i mod 2 eq 1], omega^2, N div 2);
+    beta := RecNTT([x : i -> x in Eltseq(a) | i mod 2 eq 0], omega^2, N div 2);
 
     gamma := [0 : _ in [1..N]];
-    for k in [1..N/2] do
-      delta_k := omega^k * beta[k];
-      gamma[k] := alpha[k] + delta_k;
-      gamma[k + N/2] := alpha[k] - delta_k;
+    Ndiv := (N div 2);
+    for k in [1..Ndiv] do
+      delta_k := omega^(k-1) * beta[k];
+      gamma[k] := Universe(a) ! (alpha[k] + delta_k);
+      gamma[k + Ndiv] := Universe(a) ! (alpha[k] - delta_k);
     end for;
-
+    
     return gamma;
   end if;
 end function;
 
 function RecINTT(a, omega, N)
-  return 1 / N * RecNTT(a, omega^(-1), N);
+  n_inv := Universe(a) ! N^(-1);
+  return [n_inv * item : item in RecNTT(a, omega^(-1), N)];
 end function;
 
 
@@ -393,17 +669,10 @@ function SchoolBookMult(a, b)
   n := #a_seq;
   m := #b_seq;
 
-  c := [];
-  for i in [1..n+m] do
-    c_i := 0;
-    for j in [1..n] do
-      for k in [1..m] do
-        if j + k eq i then 
-          c_i +:= a_seq[j] * b_seq[k];
-        end if;
-      end for;
-    end for;
-    Append(~c, c_i);
+  c := [0 : _ in [1..n+m]];
+  c := Parent(a) ! 0;
+  for i in [1..n] do
+    c +:= a_seq[i] * b * (Parent(a).1)^(i-1);
   end for;
 
   return c;
@@ -411,34 +680,31 @@ end function;
 
 function PrimitiveNthRoot(ell, N)
   qell := GetBaseModulus()^ell;
-  if (qell - 1) mod N ne 0 then
-    error "There is no primitive root";
-  end if;
   Zqell := Integers(qell);
   repeat
     x := Random(Zqell);
-    // The order of an element in the primary cyclic group is phi(q).
     g := x^((EulerPhi(qell)) div N);
   until g^(N div 2) ne 1; 
-  print g^N, Order(g);
   return g;
 end function;
 
-function IntToSeq(a)
-  digits := [];
-  while a gt 0 do
-    Append(~digits, a mod 10);
-    a := a div 10;
-  end while;
-
-  return digits;
-end function;
-
 function FastMult(a, b, omega, N)
-  // a_ntt := RecNTT(IntToSeq(a), omega, N);
-  // b_ntt := RecNTT(IntToSeq(b), omega, N);
+  a_seq := Eltseq(a);
+  b_seq := Eltseq(b);
 
-  // return RecINTT([a_ntt[i] * b_ntt[i]: i in [1..#IntToSeq(a)]], omega, N);
-  return a;
+  len_a := #a_seq;
+  len_b := #b_seq;
+
+  if len_a lt N then
+    a_seq := Eltseq(a) cat [BaseRing(a) ! 0 : _ in [1..N-len_a]];
+  end if;
+  if len_b lt N then
+    b_seq := Eltseq(b) cat [BaseRing(a) ! 0 : _ in [1..N-len_b]];
+  end if;
+
+  a_ntt := RecNTT(a_seq, omega, N);
+  b_ntt := RecNTT(b_seq, omega, N);
+
+  return Parent(a) ! RecINTT([a_ntt[i] * b_ntt[i]: i in [1..N]], omega, N);
 end function;
 

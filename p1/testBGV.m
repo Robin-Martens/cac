@@ -5,16 +5,17 @@ SetQuitOnError(false);
 
 test_task1 := true;
 test_task2 := true;
-test_task3 := false;
-test_task4 := false;
+test_task3 := true;
+test_task4 := true;
 test_task5 := true;
 test_task6 := true;
 
-sk, pk := BGVKeyGen();
+sk, pk, e := BGVKeyGen();
 m := RandomMessagePol();
 c := BGVEncrypt(m,pk);
 mdec := BGVDecrypt(c,sk);
 print "Test encrypt / decrypt ", m eq mdec;
+print InfNorm(BGVPartialDecrypt(c, sk));
 print "Noise in fresh ct", BGVNoiseBound(c,sk);
 
 
@@ -59,11 +60,6 @@ for k := 2 to 16 do
   ck := BGVBasicMul(ck, c1);
   mk := BGVDecrypt(ck, sk);
   mt := ((mt*m1) mod f) mod p;
-  print k;
-  if k eq 11 then
-    print InfNorm(BGVPartialDecrypt(ck, sk));
-    print mk, mt;
-  end if;
   print "Test basic multiplication ", mk eq mt;
   print "Noise in basic mult", BGVNoiseBound(ck,sk);
 end for;
@@ -131,23 +127,25 @@ print "Test multiplicative homomorphism ", aprodb eq [A[i]*B[i] : i in [1..N]];
 
 end if;
 
-// if test_task4 then 
+if test_task4 then 
+  print "\n\n";
 
-// print "\n\n";
+  // test Task 4
 
-// test Task 4
+  if (toy_set) then 
+    for k := 1 to 8 do 
+        skrec := BGVLatticeAttack(pk, k);
+        // S := Matrix(Integers(), 1, N+3, Eltseq(sk) cat [Eltseq(e)[1], -1, -112386792192535064988421686719302063162445173208390283536926134749166819]);
+        // print S;
+        // print S * skrec;
+        // print Eltseq(sk);
+       print "Lattice attack for qb^k with k =", k, skrec eq sk;
+    end for;
+    else
+       print "Only run lattice attack on toy set";
+  end if;
+end if;
 
-// if (toy_set) then 
-//   for k := 1 to 8 do 
-//      skrec := BGVLatticeAttack(pk, k);
-//      print "Lattice attack for qb^k with k =", k, skrec eq sk;
-//   end for;
-//   else
-//      print "Only run lattice attack on toy set";
-// end if;
-//
-// end if;
-//
 if test_task5 then 
 
 // test Task 5
@@ -155,37 +153,64 @@ if test_task5 then
 print "\n\n";
 
 skrec := BGVTrivialKeyRecovery(sk);
-print skrec, sk;
 print "Trivial key recovery works ", skrec eq sk;
 skrec, ncalls := BGVActiveAttack(pk, sk);
+skrec_parr, ncalls_parr := BGVActiveAttackParallel(pk, sk);
 
 print "Active attack works ", sk eq skrec, " using ", ncalls, " calls to decrypt";
+print "Paralle active attack works ", sk eq skrec_parr, " using ", ncalls_parr, " calls to decrypt";
 
 end if;
 
 if test_task6 then 
 
-print "\n\n";
+  print "\n\n";
 
-qb := GetBaseModulus();
-ell := 8;
-Zq := Integers(qb^ell);
-Zqx<x> := PolynomialRing(Zq);
+  qb := GetBaseModulus();
+  ell := 8;
+  Zq := Integers(qb^ell);
+  Zqx<x> := PolynomialRing(Zq);
 
-for k := 2 to 13 do   // mul polys of degree < 2^k
+  for k := 2 to 13  do   // mul polys of degree < 2^k
 
-  a := Zqx ! [Random(Zq) : i in [1..2^k]];
-  b := Zqx ! [Random(Zq) : i in [1..2^k]];
-  
-  print "\nMultiplying polys of degree ", 2^k;
-  print "School book "; 
-  time c1 := SchoolBookMult(a,b);
-  print "NTT ";
-  omega := PrimitiveNthRoot(ell, 2^(k+1));
-  time c2 := FastMult(a, b, omega, 2^(k+1));
-  print "Equality ", c1 eq c2;
-  
-end for;
-
+    a := Zqx ! [Random(Zq) : i in [1..2^k]];
+    b := Zqx ! [Random(Zq) : i in [1..2^k]];
+    
+    print "\nMultiplying polys of degree ", 2^k;
+    print "School book "; 
+    time c1 := SchoolBookMult(a,b);
+    print "NTT ";
+    omega := PrimitiveNthRoot(ell, 2^(k+1));
+    time c2 := FastMult(a, b, omega, 2^(k+1));
+    print "Equality ", c1 eq c2;
+  end for;
 end if;
+
+function CreateS(sk)
+  s := Eltseq(sk);
+  if N ne #s then
+    s := s cat [0 : _ in [1..(N - #s)]];
+  end if;
+
+  return Matrix(Integers(GetMaxModulus()), 1, N, s);
+end function;
+
+// Zqx<x> := PolynomialRing(Integers(GetMaxModulus()));
+//
+// a := PolynomialRing(Integers(GetMaxModulus())) ! -pk[2];
+// b := pk[1];
+//
+// S := CreateS(sk);
+// A := Transpose(Toeplitz(a));
+// B := CreateBMatrix(b, e);
+//
+q := GetMaxModulus();
+Zqx<x> := PolynomialRing(Integers(q));
+delta := (q - 1) div 2;
+pk_ct := <pk, GetMaxLevel()>;
+
+delta_pol := Zqx ! [delta : i in [0..N-1]];
+// print InfNorm(BGVPartialDecrypt(pk_ct, sk));
+//
+// print CenterRedPol(Zqx ! Eltseq(Solution(A, B)), GetMaxLevel());
 
