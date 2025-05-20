@@ -36,7 +36,7 @@
 \fancyhead[L]{Robin Martens: r0885874}
 \fancyhead[C]{}
 \fancyhead[R]{}
-\fancyfoot[L]{Report Project I}
+\fancyfoot[L]{Report Project II}
 \fancyfoot[C]{}
 \fancyfoot[R]{\thepage /\pageref{LastPage}}
 
@@ -64,276 +64,366 @@
 
 
 \subsection*{Task 1}
-\subsubsection*{Task 1.e}
+\subsubsection*{Task 1.b}
 
-\begin{figure}[htpb]
-  \centering
-  \includegraphics[width=0.8\textwidth]{./chart.png}
-  \caption{Plot of the different noise bounds for the cases given in the
-  assignment.}
-  \label{fig:plot}
-\end{figure}
+We first note that $\left| \mathbb{F}_N^n \right|  = N^n$ and that every
+linear disequation $a \cdot s \neq b$ deletes  $\frac{1}{N}$ from the solution
+space, so there remain $\frac{N - 1}{N} \cdot N^n$ solutions after 1
+disequation. After $m$ disequations, we have $N^n\left(\frac{N-1}{N} \right)^m 
+$ remaining solutions in the solution space, so we want that amount to be equal
+to $1$. Solving that equation for $m$ yields:
+\begin{equation}
+m = \left( \frac{\ln N}{- \ln(1 - \frac{1}{N})} \right) n,
+\end{equation} 
+such that $C_N = -\frac{\ln N}{\ln(1 - \frac{1}{N})}$.
 
-Figure~\ref{fig:plot} shows the noise bound for using just \texttt{BGVBasicMul}
-(in blue), for \texttt{BGVMul} (in red), for \texttt{BGVMul}, followed by a
-\texttt{BGVModSwitch} (in yellow) and for the repeated squaring (in green). We
-here clearly see why the modulus switching is necessary to prevent a build up of
-noise in the ciphertext. Note that the $y$-axis displays the logarithm of the
-actual noise bound as defined in the assignment.
+\subsubsection*{Task 1.c}
 
-We see a similar pattern for both \texttt{BGVBasicMul} and \texttt{BGVMul},
-which can be explained by the fact that the length of the ciphertext does not
-influence the noise bound (as we take the infinity norm of the partial decrypt,
-which is already central reduced). The quadratic noise growth is explained by
-working out the decryption of the product of two ciphertexts:
+As $N$ is a prime, we know that $\varphi(N) = N - 1$ and from above we have that
+the number of solutions after $m$ disequations is given by 
+\begin{equation}
+  N^{n - m} (N - 1)^m = N^{n - m} \varphi(N)^{m - 1},
+\end{equation} 
+such that the statement in this question is true.
+
+% TODO: what about zero solutions??
+
+\subsection*{Task 2}
+\subsubsection*{Task 2.a}
+
+In $\mathbb{F}_2$, there are only two possible coefficients for $
+\mathbf{a}$, $\mathbf{s}$ and $b$, so simply inverting $b$ will transform
+the disequation into an equation. For example, if we have an $\mathbf{s}$ which
+complies with 
+\begin{equation}
+a_1 s_1 + \dots + a_n s_n \neq b
+\end{equation} 
+so the \textsc{lhs} is either $0/1$ and the \textsc{rhs} is $1/0$.
+then the same $\mathbf{s}$ will comply with 
+\begin{equation}
+  a_1 s_1 + \dots + a_n s_n = \overline{b}
+\end{equation} 
+as now the \textsc{lhs} and \textsc{rhs} are equal (we can also invert the
+\textsc{lhs}, so $\mathbf{a}$).
+
+\subsubsection*{Task 2.b}
+
+We first repeat Fermat's little theorem: for an $a \in \mathbb{F}_p$ with
+$\gcd(a, p) = 1$:
+\begin{equation}
+  a^{p-1} = 1
+\end{equation} 
+and thus, as $p$ is a prime, $\gcd(a, p) = 1$ if and only if $a \neq 0$. With
+Fermat's little theorem, we can transform $a \neq 0$ into $a^{p - 1} = 1$.
+Starting from the equation 
 \begin{equation}
   \begin{split}
-    \mathcal{D}\left( \texttt{ct} \cdot \texttt{ct}'\right) &= \left(
-      \mathbf{c}_0 + \mathbf{c}_1
-    \cdot \mathbf{s} \right) \cdot (\mathbf{c}_0^\prime + \mathbf{c}_1^\prime
-    \cdot \mathbf{s}) \\
-                                                            &= (\mathbf{m} + p
-                                                            \mathbf{e}) \cdot
-                                                            (\mathbf{m}' + p
-                                                            \mathbf{e}') \\
-                                                            &=
-                                                            \mathbf{m}\mathbf{m}'
-                                                            +
-                                                            \mathbf{m}\mathbf{e}'
-                                                            +
-                                                            \mathbf{m}'\mathbf{e}
-                                                            +
-                                                            \mathbf{e}\mathbf{e}'.
+    a_1 x_1 + \dots + a_n x_n \neq b &\Leftrightarrow a_1 x_1 + \dots + a_n x_n - b
+    \neq 0 \\
+                                     &\Leftrightarrow  (a_1 x_1 + \dots + a_n
+                                     x_n - b)^{p-1} = 1
   \end{split}
 \end{equation} 
 
-For \texttt{BGVMul}, followed by a
-\texttt{BGVModSwitch}, we can clearly see that the noise is reduced to
-approximately the original level, by using modulus switching.
+and thus function $f$ is $f(x_1, \dots, x_n) = (a_1x_1 + \dots x_n a_n -b)^{p-1}
+- 1$.
 
-\noindent We get a faulty decryption from the moment that the error term of the
-decryption $p \mathbf{e}^\prime$ becomes larger than $\frac{q}{2}$. For the
-standard parameter set, we get:
+\clearpage
+
+\subsubsection*{Task 2.c}
+
+The table below summarizes the results for different values of $r$ and $p$.
+
+\begin{table}[htpb]
+  \centering
+  \caption{Timing results for $n = 10$.}
+  \label{tab:label}
+  \begin{tabular}{cccc}
+  
+    \toprule
+    $r$ & $p$ & Time taken [s]  & \# eqs.\\
+    \midrule
+    1 & 2 & 0.000 & 8\\
+    \midrule
+    1 & 3 & 0.010 & 22\\
+    \midrule
+    1 & 5 & 0.540 & 58\\
+    \midrule
+    1 & 7 & 218.580 & 101\\
+    \midrule
+    2 & 2 & 0.000 & 16 \\
+    \midrule
+    2 & 3 & 0.010 & 44 \\
+    \midrule
+    2 & 5 & 0.120 & 116\\
+    \midrule
+    2 & 7 & 39.860 & 202\\
+    \midrule
+    3 & 2 & 0.000 & 24\\
+    \midrule
+    3 & 3 & 0.010 & 66 \\
+    \midrule
+    3 & 5 & 0.090 & 174 \\
+    \midrule
+    3 & 7 & 21.930 & 303\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+We can see that adding the field equations does not have an influence on the
+runtime of the algorithm, which is logical, given the fact that the field
+equations actually just state Fermat's little theorem and as $p$ is prime, the
+field equation will hold for any member of the field $\mathbb F_p$.
+
+\begin{table}[htpb]
+  \centering
+  \caption{Timing results with added field equations and $n = 8$.}
+  \label{tab:label}
+  \begin{tabular}{ccc}
+   \toprule
+   $p$ & Time taken [s] & \# eqs. \\
+   \midrule
+   2 & 0.000 & 16 \\
+   \midrule
+   3 & 0.000 & 30 \\
+   \midrule
+   5 & 0.570 & 66 \\
+   \midrule
+   7 & 217.220 & 109 \\
+   \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsubsection*{Task 2.d}
+
+Euler's congruence states that for an $a \in \mathbb{F}_N$ and $\gcd(a, N) = 1$,
+$a^{\phi(N)} = 1$. So now, we cannot transform the disequation $a_1 x_1 + \dots
++ a_n x_n \neq 0$ simply into an equation, as $a_1 x_1 + \dots + a_n x_n$ can be
+equal to a multiple of $p$, such that Euler's congruence does not work anymore.
+
+\subsection*{Task 3}
+\subsubsection*{Task 3.a}
+
+Fermat's little theorem states that for an $a \in \mathbb{F}_p$, $a^{p-1} = 1$
+if $a \neq 0$ and $a^{p - 1} = 0$ if $a = 0$. Then we define, $f(x) = 1 -
+\left( x -  c \right)^{p - 1}$, such that $f(x) = 1$ if  $x = c$ and $f(x) = 0$
+if $x \neq  c$. Extending this to $c$ and $d$ yields: 
 \begin{equation}
-  \log_2\left(\frac{q}{2}\right) \approx 404.69.
+  f(x, y) = \left( 1 - (x - c)^{p-1} \right) \left( 1 - (y - d)^{p - 1} \right),
+\end{equation} 
+such that $f(x, y) = 1$ if $(x, y) = (c, d)$ and $f(x,y) = 0$ if $(x, y) \neq
+(c, d)$. Now, as stated in the assignment, $W(x, y)$ is now the sum of the above
+polynomials when $c + d \ge  p$ : 
+\begin{equation}
+  W(x, y) = \sum_{\substack{c, d \in \mathbb{F}_p \\ c + d \ge p}}
+\left( 1 - (x - c)^{p-1} \right) \left( 1 - (y - d)^{p - 1} \right).
 \end{equation} 
 
-When the noise bound comes close to this bound, we get errors in the decryption.
-From the figure we can derive that we get errors from $k = 14$ and above. A very
-rough bound can be derived from the fact that we have $e_0 2^k < \frac{q}{2}
-$. With $\log_2(e_0) \approx 22$, we find $k = 18$, which is higher than we
-found in the figure, but is explained by the fact that $\mathbf{m}\mathbf{e}' +
-\mathbf{m}'\mathbf{e}$ also contribute to the noise term.
+\subsubsection*{Task 3.b}
+We have $c = c_0 + c_1p$ and $d = d_0 + d_1p$, such that $c + d = (c_0 + c_1p) +
+(d_0 + d_1p) = (c_0 + d_0) + (c_1 + d_1)p$. Now, if $c_0 + d_0 \ge  p$, we have
+to add $1$ to the coefficient of $p$, which is $W(c_0, d_0)$. If $c_1 + d_1 \ge
+p$, we have to reduce modulo $p$, as the result $c + d$ will also be reduced
+modulo $p^2$.
 
-For multiplying a bunch of ciphertexts, we have to perform the \texttt{BGVMul}
-with modulus switching, as long as it's possible based on the level $\ell$.
-Thereafter, the noise will inevitable grow (approximately) quadratically until
-we reach the noise bound and have a faulty decryption.
+\subsubsection*{Task 3.c}
+
+We first find the functions $f_1$ and $f_2$ from the hint. For that, we write
+all $a_i$, $x_i$ and $b$ as: $a_i = a_{i0} + p a_{i1}$, $x_i = x_{i0} + p
+x_{i1}$ and $b = b_0 + p b_1$. We fill this into the expression  $a_1 x_1 +
+\dots + a_n x_n - b$ and after multiplying out and reducing $\text{mod}\ p^2$:
+
+\begin{equation}
+\begin{cases}
+  f_0(x_{11}, \dots, x_{n2}) = a_{10} x_{10} + \dots + a_{n0} x_{n0} - b_0 \\
+  f_1(x_{11}, \dots, x_{n 2}) = a_{11} x_{10} + a_{10}x_{11} + \dots + a_{n_1}
+  x_{n0} + a_{n 0} x_{n 1} - b_1
+\end{cases}.
+\end{equation} 
+Now, it is still possible that $f_0(s) \ge p$, in which case we would need to add
+something to $f_1$. We can use the $W$-function for this, where we have to
+decompose $f_0$ to sums of elements in $\mathbb F_p$. First, we note that 
+\begin{equation}
+  \begin{cases}
+    2 x_{10} = \overline{2 x_{10}} + W(x_{10}, x_{10}) \\
+    3 x_{10} = 2x_{10} + x_{10} = \overline{3 x_{10}} + W(x_{10}, x_{10}) +
+    W(2x_{10}, x_{10})
+  \end{cases},
+\end{equation} 
+where the $\overline{\cdot}$ indicates that the result is $< p$. If we
+generalize this, we find: 
+\begin{equation}
+a_{10} x_{10} = \overline{a_{10} x_{10}} + p\sum_{i = 1}^{a_{10} - 1} W\left( i
+x_{10}, x_{10} \right).
+\end{equation} 
+Applying this for all terms in $f_0$ we find:
+\begin{equation}
+  f_1(x_{11}, \dots, x_{n 2}) = \sum_{i = 1}^{n}  (\overline{a_{i1} x_{i0}} +
+  \overline{a_{i 0} x_{i
+  1}}) - b_1 + \sum_{j = 1}^{n} \sum_{k = 1}^{a_{j 0} - 1}   W(k x_{j 0}, x_{j
+  0}).
+\end{equation} 
+This way, all the multiplications are smaller than $p$, the sum of these
+multiplications can still be $\ge p$. As an example, if we have $\overline{a} +
+\overline{b} + \overline{c}$, where $\overline{a}, \overline{b}, \overline{c}
+\in \mathbb F_p$, then 
+\begin{equation}
+  \begin{split}
+    \overline{a} + \overline{b} + \overline{c} &= \overline{a + b} + \overline{c} +
+    W(\overline{a}, \overline{b}) \\
+    &= \overline{a + b + c} +
+    W(\overline{a}, \overline{b}) +
+    W(\overline{a + b}, \overline{c}).
+  \end{split}
+\end{equation}
+Adding this to $f_1$ yields:
+\begin{equation}
+  f_1(x_{11}, \dots, x_{n 2}) = \sum_{i = 1}^{n}  (\overline{a_{i1} x_{i0}} +
+  \overline{a_{i 0} x_{i
+  1}}) - b_1 + \sum_{j = 1}^{n} \sum_{k = 1}^{a_{j 0} - 1}   W(k x_{j 0}, x_{j
+  0}) + \sum_{j = 2}^{n} W \left( \sum_{k = 1}^{j - 1} a_{k 0} x_{k 0}, a_{j
+  0} x_{j 0} \right).
+\end{equation} 
+Now, we have $f_0$ and $f_1$ and we know the following:
+
+\begin{equation}
+  \begin{split}
+    a_1 x_1 + \dots + a_n x_n \neq b &\Leftrightarrow f_0(x_{11}, 
+    \dots, x_{n 2}) + p f_1(x_{11}, 
+    \dots, x_{n 2}) 
+    \neq 0 \\
+  \end{split}.
+\end{equation} 
+Then we use the same trick as in Task 2, namely applying Fermat's Little
+Theorem:
+\begin{equation}
+\begin{cases}
+  g_0 = (f_0 - b_0)^{p - 1} \\
+  g_1 = (f_1 - b_1)^{p - 1} \\
+\end{cases}
+\end{equation} 
+both of which are either $0$ or $1$, but they cannot be 0 at the same, otherwise
+the condition above would no longer hold. It is however possible that in the
+special case of $p = 2$, both $g_0 = 1$ and $g_1 = 1$, such that their sum is $0
+mod 2$. For that case, we again add a $W$ function. The final function then
+becomes:
+\begin{equation}
+  f = \left( (f_0 - b_0)^{p - 1} + (f_1 - b_1)^{p-1} + W(f_1, f_2)
+  \right)^{p-1} - 1.
+\end{equation} 
+Due to the fact that the sum within the outer parenthesis is non-zero, Fermat's
+Little Theorem states that raising it to the power $p - 1$ makes it 1.
+Subtracting by one then leads to the desired property  $f(s) = 0$ iff the
+disequality holds.
+
+\subsubsection*{Task 3.c}
+
+\begin{table}[htpb]
+  \centering
+  \caption{Timing results for $n = 10$.}
+  \label{tab:label}
+  \begin{tabular}{cccc}
+  
+    \toprule
+    $r$ & $p^2$ & Time taken [s]  & \# eqs.\\
+    \midrule
+    1 & 4 & 0.000 & 8\\
+    \midrule
+    1 & 9 & 0.010 & 22\\
+    \midrule
+    2 & 4 & 0.000 & 16 \\
+    \midrule
+    2 & 9 & 0.010 & 44 \\
+    \midrule
+    3 & 4 & 0.000 & 24\\
+    \midrule
+    3 & 9 & 0.010 & 66 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+
 
 \subsection*{Task 4}
-
-\subsubsection*{Task 4.a}
-
-The intuition is that the error on the equations cannot become too large w.r.t.
-the value of the equation itself. If we take the worst case, the maximum value
-of a single equation is $(q - 1)n$ (we can take a more liberal bound if we take
-into account that $\frac{1}{3}$ of the secret key is supposed to be $0$, or
-even more liberal if take into account the cancellation due to the $1$ and $-1$
-in the secret key). The maximum value of an error coefficient is $B$, so we get
-the bound \begin{equation}
-  (q - 1)n > B.
-\end{equation} 
-
-\subsubsection*{Task 4.b}
-
-The idea behind the lattice attack is to create a lattice where the shortest
-vector of the lattice contains the secret key $\mathbf{s}$. We thus have to
-create a target vector $\mathbf{t}$ which lies inside the lattice and is much
-shorter than the expected shortest vector (using the Gaussian + Stirling
-heuristic) in the lattice.
-
-If we want to create an $(n+3)$-dimensional lattice, we consider the following
-matrix (where the rows of the matrix form a basis for the lattice): 
-\begin{equation}
-  M = \begin{bmatrix} 
-    1 & \cdots & 0 & 0 & a_1 & 0 & 0 \\
-    0 & 1 & \cdots & 0 & a_2 & 0 & 0 \\
-    \vdots & & \ddots & 0  & \vdots & 0 & 0 \\
-    0 & & & 1 & a_{n} & 0 & 0 \\
-    0 & \cdots & \cdots & 0 & p & 1 &  0 \\
-    0 & \cdots & \cdots & 0 & B[1] & 0 & 1 \\
-    0 & \cdots & \cdots & 0 & q & 0 & 0 \\
-  \end{bmatrix}.
-\end{equation} 
-
-\noindent The first $n$ columns are just an identity matrix, while the $(n+1)$th
-column corresponds to equation (2) (which is the first row of the circular
-matrix for the negacyclic convolution, which corresponds to polynomial
-multiplication modulo $x^N + 1$), where we have expressed the mod $q$
-explicitly as a factor $kq$ in the equation.
-
-This way, if we multiply $M$ with $\begin{bmatrix} \mathbf{s} & E[1] & -1 & k
-\end{bmatrix}$, we get:
-\begin{equation}
-  \begin{bmatrix} 
-    \mathbf{s} & E[1] & -1 & k
-  \end{bmatrix}
-  \cdot M = 
-  \begin{bmatrix} \mathbf{s} & 0 & E[1] & 0 \end{bmatrix}.
-\end{equation}
-
-\noindent For the volume we have, as $d = n$ :
-\begin{equation}
-  \det M = q \det(I_{(n + 2) \times (n + 2)}) = q,
-\end{equation} 
-from which we can calculate the expected length of the shortest vector $\lambda_1(L)$ : 
-\begin{equation}
-  \begin{split}
-    \lambda_1(L) &\approx \sqrt{\frac{d}{2 \pi e}} \text{vol}(L)^{1 / d} \\
-                 &\approx \sqrt{\frac{N+3}{2 \pi e}} q^{\frac{k}{N+3}},
-  \end{split}
-\end{equation} 
-if we take $q$ to be of the form $q^k$. The expected length of $\mathbf{t}$ is
-(worst case):
-\begin{equation}
-  \|\mathbf{t}\| \approx \sqrt{\frac{2}{3}N + B^2},
-\end{equation}
-as $\mathbf{s}$ is taken uniformly and is ternary, so $\frac{2}{3}$ of the
-elements are either $1$ or $-1$. If we combine the above two equations and solve
-for $k$, we find:
-\begin{equation}
-k \ge 4.07.
-\end{equation} 
-
-If we wouldn't take out $p$ explicitly from $E[1]$, we could not put $p$ in the
-matrix as above and we cannot put $pE[1]$ in the target vector, as it would be
-too large (or we would have to take $k$ very large).
-
-\subsection*{Task 4.d}
-Experimentally, we find that we find the correct vector for $k \ge 5$, which
-corresponds to the bound for $k$ found in the previous subtask.
-
 
 \subsection*{Task 5}
 
 \subsubsection*{Task 5.a}
-
-For $k = 2$, the decryption equation becomes
+Our method is to calculate the expected amount of monomials in $\mathbb{F}_p$ of
+degree $p - 1$, which is then the expected amount of disequations we need, as
+every disequation will give rise to a linear equation and we need a full rank
+matrix to solve that problem. The estimation lies in the fact that it's possible
+that some disequations give rise to linear dependent equations, in which case we
+need more disequations. The amount of monomials is given by the `stars and bars'
+method. Using that method, we find that if we have $n$ variables and $m$ powers,
+the amount of monomials is given by ${m + n - 1}\choose{n - 1}$. Now we want to know
+the amount of monomials of degree $p-1$ or \textit{less}, so we have to take the
+sum:
 \begin{equation}
-  \mathbf{r} = \left[\texttt{ct}[0] + \texttt{ct}[1] \mathbf{s}\right]_q \mod p.
+  \sum_{i = 1}^{p-1}  {{n + i - 1}\choose{n - 1}}.
 \end{equation} 
 
-\noindent As $\mathbf{s}$ is small, it will not be central reduced, nor be
-reduced mod $p$ (if $p > 2$), such that if we plug in $\texttt{ct} = [0, 1]$,
-we get $\mathbf{r} = \mathbf{s}$.
+We start from $i = 1$, as we're not counting the monomial 1, which is handled
+separately.
 
-If $p = 2$, however, the $\text{mod}\ p$, \textit{will} reduce $\mathbf{s}$ (in
-this case, as $\mathbf{s}$ is ternary, all the $-1$ will be reduced to $1$.
+% TODO: explain what happens if the solution is not unique.
 
-\subsubsection*{Task 5.c}
+\subsubsection*{5.c}
 
-As explained above, there will be a decryption error when the noise term of the
-partial decryption is greater than $\frac{q}{2}$, as then the noise wraps around
-due to the centered reduction. Now, by construction we have $q = 1 \mod p$ and
-thus $(q - 1) = 0 \mod p$ and also $\frac{q-1}{2} = 0 \mod p$. Secondly, we note
-that
+The table below shows the results for $n = 10$ :
 
-\begin{equation}
-  \begin{cases}
-    \frac{q-1}{2} < \frac{q}{2} \\
-    \frac{q-1}{2} + 1 > \frac{q}{2}
-  \end{cases}.
-\end{equation} 
+ \begin{table}[htpb]
+  \centering
+  \label{tab:label}
+  \begin{tabular}{ccc}
+    \toprule
+    $p$ & Expected \# eqs. & Needed \# eqs. \\
+    \midrule
+    3 & 65 & 66 \\
+    \midrule
+    5 &1000&  1001 \\
+    \midrule
+    7 &8007& 8008\\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
-\noindent This means that if we create a ciphertext with noise bound
-$\frac{q-1}{2}$, it will be a bordeline case. Thirdly, we notice that the noise
-term is always a multiple of $p$ and that by adding multiples of $p$ to the
-any part of the ciphertext will not change the decryption as long as we don't
-surpass the noise bound.
+We see that the total number of needed equations is almost the same as the
+expected number of equations calculated above. The discrepancy can be explained
+by the fact that by chance, some linearized equations can be linearly dependent.
 
-We start with the public key as a valid ciphertext, which is defined as
-\begin{equation}
-  \mathbf{b} = \mathbf{a} \cdot \mathbf{s} + p \mathbf{e},
-\end{equation}
-where the coefficients of $\mathbf{e}$ are in the interval $[-B, B]$, with $B$
-small. The fact that $B$ is small can be exploited as follows. Suppose that the
-$i$th coefficient of $\mathbf{e}$ is $e_i \in [-B, B]$. Now we add
-$\frac{q-1}{2}$ to $e_i$, such that we either have an overshoot or undershoot of
-the noise bound (depending on the fact of the original $e_i$ was positive or
-negative). Note that in the special case that $e_i = 0$, we are already at the
-noise bound. In general, we then loop twice over the interval $[1, B]$. In the
-first round, we subtract $p$ from $e_i$ (to test for overshoot) and in the
-second round, we add $p$ to $e_i$ (to test for undershoot). Somewhere in this
-looping, we reach the bound $\frac{q-1}{2}$, which indicates that we found
-$e_i$.
-
-The final things which we have to do is finding a way to check if we reached the
-bound $\frac{q-1}{2}$, as we do not have access to the
-\texttt{BGVPartialDecrypt} method. If some $e_i = \frac{q-1}{2}$, the decryption
-will still be correct, but if we add $1$ to $e_i$, we get (taking into account
-the centered reduction):
-\begin{equation}
-  \frac{q-1}{2} + 1 - q = \frac{1-q}{2} = - \frac{q-1}{2},
-\end{equation} 
-which is \textit{still} a multiple of $p$, such that it disappears modulo $p$.
-This indicates that we still get the original message that we encrypted, which
-is a decryption failure, as we should get $\mathbf{m} + 1$, following the
-decryption equation. It suffices thus to check that \texttt{BGVDecrypt(ct, sk)
-} \texttt{eq} \ \texttt{BGVDecrypt(<[ct[1][1]+1, ct[1][2]], ct[2]>, sk)}. \\
-
-This can also be generalized to work for all coefficients at the same time.
-Then, the followings steps should be adapted:
-\begin{itemize}
-  \item Instead of adding $\frac{q-1}{2}$ in the first step, we add the
-    polynomial of degree $N-1$ with all coefficients equal to $\frac{q-1}{2}$
-    (i.e. $\sum_{n=0}^{N-1} \left( \frac{q-1}{2} \right) x^i$).
-  \item In the iterations, we do a similar change: instead of adding $p$, we add
-    the polynomial of degree $N-1$ with all coefficients equal to $p$.
-  \item To check which coefficients already reached the threshold, we add a
-    polynomial of degree $N-1$ with all coefficients 1 and decrypt. We then
-    check which coefficients are equal (using the principle described above) to
-    the decryption of the ciphertext before we added the polynomial.
-\end{itemize}
-
-The methods where we find all coefficients at once is \textit{much} more
-efficient then the algorithm where all coefficients are found one by one
-(experimentally up to a factor 40 less).
- 
 \subsection*{Task 6}
 
-\subsubsection*{Task 6.c}
-Yes, if we want to multiply polynomials over the ring $\mathbb{Z}_q[x] \setminus
-\left( x^N - 1 \right) $, we have to use the so-called positive wrapped
-convolution or cyclic convolution and for working over the ring $\mathbb{Z}_q[x]
-\setminus \left( x^N + 1 \right) $, we have to do use the so-called negative
-wrapped convolution (or negacyclic convolution). The main point is that by
-evaluating the \textsc{ntt} in the roots of $(x^N - 1)$, we're working in the
-above mentioned ring. We can use the same principle to work over the ring module
-$(x^N + 1)$, namely by evaluating the \textsc{ntt} in the roots $(x^N + 1)$
-instead of the roots of $(x^N - 1)$. We call these roots $\psi$, the $2n$-th
-root of unity such that $\psi^2 = \omega$ in $\mathbb{Z}_q$, as $x^{2n} - 1 = (x^n -
-1)(x^n + 1)$. We can then evaluate the \textsc{ntt} in the odd powers of $\psi$,
-which gives \cite{ntt-2023, satriawan-2023}:
+For proof of completeness, we have to show that when both Peggy and Victor
+follow the protocol, the \texttt{Verify} of Victor will always return
+\texttt{true}. We have two cases: $c = 0$ and $c = 1$: 
+ \begin{itemize}
+   \item $c = 0$: then the response is $C$. By design, $M = C \cdot A \cdot
+     C^{\text{trunc}(n)}$, so the verify will always return  \texttt{true}.
+   \item $c = 1$: then the response is $\mathbf{m}$. We then find $M
+     \cdot\mathbf{m} = C \cdot A \cdot C^{\text{trunc}(n)} \cdot \left(
+     C^{\text{trunc}(n)} \right)^{-1} \mathbf{s} = C \cdot A \cdot \mathbf{s}
+     \not\equiv \mathbf{0}$, as by design $C \cdot A \cdot \mathbf{s} \not\equiv
+     \mathbf{0}.$
+\end{itemize}
+
+\subsection*{Task 8}
+
+We first note that finding $\mathbf{t}$ is sufficient for finding $\mathbf{s}$
+due to the Moore-Penrose inverse of $A$: 
 \begin{equation}
-  \begin{split}
-    \textsc{ntt}_\psi (a)_j &= \sum_{i= 0}^{n - 1} a_i \psi_{2n}^{i (2j +1)} \\
-                            &= \sum_{i = 0}^{n-1} a_i \omega_n^{ij} \psi_{2n}^i
-                            \\
-                            &= \textsc{ntt}_\omega\left( \left[ \psi_{2n} a_0,
-                            \dots, \psi_{2n}^{n-1} a_{n-1} \right]  \right) 
-  \end{split}
+  \mathbf{s} = A^+ A \mathbf{t},
 \end{equation} 
+with $A^+$ the pseudo-inverse. Secondly, we note that when receiving
+$\mathbf{C}$, we actually get $m$ disequations, as $\mathbf{C} \cdot \mathbf{t}
+\not\equiv \mathbf{0}$. 
 
-\subsubsection*{Task 6.d}
+Once we have enough disequations, we can all linearize them via the methods
+described in Task 5, which will then give us a system of linear equations, which
+is will yield $\mathbf{t}.$ As explained above, from  $\mathbf{t}$, we can
+derive $\mathbf{s}$. The method from Task 5 only works when $N$ is prime.
 
-Yes, we could use the \textsc{ntt} and the \textsc{intt} to do the encoding. The
-main idea of encoding is to perform multiplication and addition in $R_p$, which
-is then a point-wise multiplication in $\mathbb{F}_p$. As we want to have
-pointwise multiplication over a sequence in $\mathbb{F}_p$, which corresponds to
-multiplication in $R_p$, we take the inverse \textsc{ntt} for encoding and the
-\textsc{ntt} for decoding.
-
-\clearpage
+\subsection*{Task 9}
 
 \printbibliography
 
