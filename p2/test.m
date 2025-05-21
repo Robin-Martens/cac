@@ -6,7 +6,7 @@ n := 8;
 
 test_task1 := false;
 test_task2 := false;
-test_task3 := true;
+test_task3 := false;
 test_task4 := true;
 test_task5 := false;
 test_task6 := false;
@@ -154,51 +154,36 @@ if test_task3 then
     assert (Integers() ! a) * (Integers() ! b) eq (Integers() ! j) * (Integers() ! p) + Integers() ! a*b;
   end for;
   //
-  for p in [2, 3] do
-    Fp := GF(p);
-    ZN := Integers(p^2);
-    ZNn := CartesianPower(ZN, 2);
-    Zpnx := PolynomialRing(ZN, 2*n);
+  for r in [1, 2, 3, 4, 5] do
+    for p in [2, 3] do
+      Fp := GF(p);
+      ZN := Integers(p^2);
+      ZNn := CartesianPower(ZN, 2);
+      Zpnx := PolynomialRing(ZN, 2*n);
 
-    s := Random(ZNn);
-    a, b := RandomDiseq(s, false);
-    // s := <ZN ! 4, ZN ! 6>;
-    // a := <ZN ! 8, ZN ! 5>; b := ZN ! 2;
-    b1, b2 := DigitExtract(b);
-    e, f1, f2, as := FromDiseqToEq2(a, b);
+      s := Random(ZNn);
+      // a, b := RandomDiseq(s, false);
+      // b1, b2 := DigitExtract(b);
+      // e, f1, f2, as := FromDiseqToEq2(a, b);
 
-    // print "f0=", f1, " f1=", f2;
-    // print "s = ", s, " | a = ", a, " | as = ", as, " | b = ", b;
-    // print "a * s = ", (Integers() ! &+[Integers() ! a[i] * Integers() ! s[i] : i in [1..#s]]) mod p^2;
-    // print "f0(s) ", EvaluateWithExtract(f1, s);
-    // print "f1(s) ", EvaluateWithExtract(f2, s);
-    // print "f(s) = ", EvaluateWithExtract(e, s);
+      eqs := [];
+      t := Cputime();
+      Cp := CalculateCN(p^2);
+      for i in [1..Ceiling(2 * Cp * n * r)] do
+        a, b := RandomDiseq(s, false);
+        e, f1, f2, as := FromDiseqToEq2(a, b);
+        // assert EvaluateWithExtract(e, s) eq 0;
+        Append(~eqs, e);
+      end for;
 
-    eqs := [];
-    Cp := CalculateCN(p^2);
-    for i in [1..Ceiling(2 * Cp * n * 3)] do
-      a, b := RandomDiseq(s, false);
-      e, f1, f2, as := FromDiseqToEq2(a, b);
-      assert EvaluateWithExtract(e, s) eq 0;
-      // if res ne 0 then
-      //   print res, a, b, e;
-      //   print "f0=", f1, " f1=", f2;
-      //   print "s = ", s, " | a = ", a, " | as = ", as, " | b = ", b;
-      //   print "a * s = ", (Integers() ! &+[Integers() ! a[i] * Integers() ! s[i] : i in [1..#s]]) mod p^2;
-      //   print "f0(s) ", EvaluateWithExtract(f1, s);
-      //   print "f1(s) ", EvaluateWithExtract(f2, s);
-      //   print "f(s) = ", EvaluateWithExtract(e, s);
-      //   break;
-      // end if;
-      Append(~eqs, e);
+      print "p^2 = ", p^2, " | # Eqs = ", #eqs, " | r = ", r;
+      sols := Variety(Ideal(eqs));
+      print s;
+      print ExtractS(sols);
+      print "Time taken: ", Cputime(t), " seconds";
+      print "============";
     end for;
-
-    print "p = ", p, " | ", #eqs;
-    sols := Variety(Ideal(eqs));
-    print ExtractS(sols);
-    print s;
   end for;
-
 
 
   print "All tests of task 3 passed";
@@ -208,7 +193,23 @@ end if;
 // TASK 4 //
 ////////////
 if test_task4 then
-  
+  for n in [10..1000 by 100] do
+    p := 3;
+    Fp := GF(p);
+    ZNn := CartesianPower(Fp, n);
+    Zpnx := PolynomialRing(Fp, n);
+
+    s := Random(ZNn);
+    eqs := [];
+    t := Cputime();
+    Cp := CalculateCN(p);
+    for i in [1..Ceiling(Cp * n)] do
+      a, b := RandomDiseq(s, false);
+      e := FromDiseqToEq(a, b);
+      Append(~eqs, e);
+    end for;
+    print "dreg =", CalcDreg(eqs, n), " | n = ", n, " | m = ", Round(Cp*n);
+  end for;
 end if;
 
 ////////////
