@@ -136,7 +136,7 @@ The table below summarizes the results for different values of $r$ and $p$.
 
 \begin{table}[htpb]
   \centering
-  \caption{Timing results for $n = 10$.}
+  \caption{Timing results for $n = 8$.}
   \label{tab:label}
   \begin{tabular}{cccc}
   
@@ -318,33 +318,91 @@ disequality holds.
 
 \subsubsection*{Task 3.c}
 
+Table~\ref{tab:timing_results_3c} shows the timing results for $p^2 = 4$ and
+$p^2 = 9$ for $r$ ranging from 1 to 3. We see an opposite pattern w.r.t. Task 2,
+as here, the larger $r$, the longer it takes to solve the system, which can be
+explained by the fact that increasing $r$ leads to a very large system of
+equations, which takes longer to solve.
+
 \begin{table}[htpb]
   \centering
-  \caption{Timing results for $n = 10$.}
-  \label{tab:label}
+  \caption{Timing results for $n = 8$.}
+  \label{tab:timing_results_3c}
   \begin{tabular}{cccc}
   
     \toprule
     $r$ & $p^2$ & Time taken [s]  & \# eqs.\\
     \midrule
-    1 & 4 & 0.000 & 8\\
+    1 & 4 & 0.010 & 78\\
     \midrule
-    1 & 9 & 0.010 & 22\\
+    1 & 9 & 0.310 & 299\\
     \midrule
-    2 & 4 & 0.000 & 16 \\
+    2 & 4 & 0.010 & 155 \\
     \midrule
-    2 & 9 & 0.010 & 44 \\
+    2 & 9 & 0.510 & 597 \\
     \midrule
-    3 & 4 & 0.000 & 24\\
+    3 & 4 & 0.010 & 232 \\
     \midrule
-    3 & 9 & 0.010 & 66 \\
+    3 & 9 & 0.800 & 896 \\
     \bottomrule
   \end{tabular}
 \end{table}
 
+\subsection*{Task 3.e}
 
+I would think solving the disequations over a field would be easier, as in a
+field a multiplicative inverse is always defined, which is not the case in a
+ring, such that operations on elements of the field become easier.
 
 \subsection*{Task 4}
+
+Table~\ref{tab:dreg} shows the results for the degree of regularity for
+increasing values of $n$ and $m = C_N \cdot n$. We see that if  $n$ increases,
+$d_\text{reg}$ will also increase, so if we extrapolate,  $d_\text{reg}$ would
+tend to $\infty$. This indicates that the larger $n$, the
+more difficult it is to solve the problem, which can also be seen based on $m$,
+the number of equations. The complexity of the system is then given by the
+theory as 
+
+\begin{equation}
+  \mathbcal{O}\left( \left( m {{n + d_\text{reg} - 1}\choose{d_\text{reg}}}
+  \right)^\omega  \right) .
+\end{equation} 
+
+For the exhaustive search, there would be $p^n$ amount of different secrets
+available. The comparison in complexity can be seen in the table.
+
+\begin{table}[h!]
+\centering
+\caption{Degree of regularity for $n$ and $m$.}
+\begin{tabular}{ccccc}
+\toprule
+$n$ & $m$ & $d_\text{reg}$ & Complexity & $3^n$\\
+\midrule
+10  & 27   & 3  & $\mathcal{O}\left( 2.10e{11} \right)  $& 5.9e4\\
+\midrule
+110 & 298  & 11 & $\mathcal{O}\left( 4.14e52 \right)  $& 3.04e52\\
+\midrule
+210 & 569  & 18 & $\mathcal{O}\left( 1.48e 87 \right)  $& 1.57e100\\
+\midrule
+310 & 840  & 24 &$\mathcal{O}\left( 8.03e117 \right)  $ & 8.08e147\\
+\midrule
+410 & 1111 & 30 & $\mathcal{O}\left( 2.33e 148 \right)  $& 4.17e195 \\
+\midrule
+510 & 1382 & 37 & $\mathcal{O}\left( 1.61 e 182 \right)  $& 2.15e243\\
+\midrule
+610 & 1653 & 43 & $\mathcal{O}\left( 3.19e 212 \right)  $& 1.11e291 \\
+\midrule
+710 & 1924 & 49 & $\mathcal{O}\left( 5.57e 242 \right)  $& Inf \\
+\midrule
+810 & 2195 & 55 & $\mathcal{O}\left( 8.91e 272 \right)  $& Inf \\
+\midrule
+910 & 2466 & 61 & $\mathcal{O}\left( 1.3425e 303 \right)  $& Inf \\
+\end{tabular}
+\label{tab:dreg}
+\end{table}
+
+\clearpage
 
 \subsection*{Task 5}
 
@@ -362,15 +420,16 @@ sum:
 \begin{equation}
   \sum_{i = 1}^{p-1}  {{n + i - 1}\choose{n - 1}}.
 \end{equation} 
-
 We start from $i = 1$, as we're not counting the monomial 1, which is handled
 separately.
 
-% TODO: explain what happens if the solution is not unique.
+If the solution from the linear system is not unique, we have to do extra work
+to verify which of the solutions is the actual solution of the system of
+disequations.
 
 \subsubsection*{5.c}
 
-The table below shows the results for $n = 10$ :
+The table below shows the results for $n = 8$ :
 
  \begin{table}[htpb]
   \centering
@@ -424,6 +483,48 @@ is will yield $\mathbf{t}.$ As explained above, from  $\mathbf{t}$, we can
 derive $\mathbf{s}$. The method from Task 5 only works when $N$ is prime.
 
 \subsection*{Task 9}
+
+The most important point to see is that for a signature to succeed, the
+following relations between $A, M, C$ and $\mathbf{m}$ should hold:
+
+\begin{equation}
+\begin{cases}
+  M = C \cdot A \cdot C^{\text{trunc}(n)} \\
+  M \cdot \mathbf{m} \not\equiv \mathbf{0}
+\end{cases}.
+\end{equation} 
+
+We note that neither of the two conditions requires $\mathbf{s}$, explicitly,
+which makes it possible to attack the scheme. The most difficult problem is
+finding an $\mathbf{m}$, given an $M$, so we evade that by choosing an $M$ and
+$\mathbf{m}$ such that $M \cdot \mathbf{m} \not\equiv \mathb{0}$.
+
+Then the next step is finding the $C$ matrix such that the first condition
+holds. This is also difficult, as the equation is non-linear due to the fact
+that $C^{\text{trunc}(n)}$ is derived from  $C$. We can make this equation
+easier by choosing $C^{\text{trunc}(n)} = I$, such that in the scenario that $m
+= 3$ and $n = 2$, we get: 
+\begin{equation}
+  \begin{bmatrix}
+    m_1 & m_2  \\
+      m_3 & m_4 \\
+      m_5 & m_6 \\
+      \end{bmatrix}  = \begin{bmatrix} 1 & 0 & c_1 \\ 0 & 1 & c_2 \\ c_3 & c_3 &
+      c_5\end{bmatrix} \begin{bmatrix} a_1 & a_2 \\ a_3 & a_4 \\ a_5 & a_6
+      \end{bmatrix} \begin{bmatrix} 1 & 0 \\ 0 & 1 \end{bmatrix}.
+\end{equation} 
+
+Here we can see that we have $5$ unknowns in the $C$-matrix and $6$ unknowns in
+the $M$-matrix, but that we only have 6 equations. We can solve that issue by
+choosing some unknowns fixed values, such that we remain with 6 unknowns. This
+is not generally solvable, as (1) the system must be solvable and (2) we're
+working with a non-prime order of the ring, which means that not all elements
+have an inverse. Furthermore, if we choose fixed values for unknowns, we give
+precedence to the $m$-values, as that will make it easier to find the
+$\mathbf{m}$ later.
+
+This method is however not generalizable and due to time constraints, I did not
+implement it.
 
 \printbibliography
 
